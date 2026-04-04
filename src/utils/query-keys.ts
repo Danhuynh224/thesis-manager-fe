@@ -3,6 +3,7 @@ export const queryKeys = {
   lecturers: (params?: unknown) => ['lecturers', params] as const,
   students: (params?: unknown) => ['students', params] as const,
   profile: ['profile'] as const,
+  myFields: ['myFields'] as const,
   terms: (params?: unknown) => ['terms', params] as const,
   quotas: (params?: unknown) => ['quotas', params] as const,
   registrations: (params?: unknown) => ['registrations', params] as const,

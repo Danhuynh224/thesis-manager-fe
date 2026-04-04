@@ -133,7 +133,7 @@ export default function StudentStatusPage() {
             pagination={false}
             dataSource={documentsQuery.data ?? []}
             columns={[
-              { title: "Loại", dataIndex: "type" },
+              { title: "Loại", dataIndex: "typeLabel" },
               {
                 title: "Tệp",
                 render: (_, record) => (

@@ -78,6 +78,7 @@ export interface Registration {
 export interface DocumentRecord {
   id: number | string;
   type: DocumentType | string;
+  typeLabel?: string;
   name?: string;
   fileName?: string;
   fileUrl?: string;

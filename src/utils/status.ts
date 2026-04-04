@@ -52,6 +52,35 @@ export const documentTypeLabels: Record<DocumentType, string> = {
   COMMITTEE_MINUTES: 'Biên bản hội đồng',
 };
 
+export function getDocumentTypeLabel(documentType?: string) {
+  if (!documentType) {
+    return 'Chưa xác định';
+  }
+
+  return (
+    documentTypeLabels[documentType as DocumentType] ??
+    documentType
+      .split('_')
+      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+      .join(' ')
+  );
+}
+export const registrationTypeLabels = {
+  BCTT: 'Báo cáo thực tập tốt nghiệp',
+  KLTN: 'Khóa luận tốt nghiệp',
+} as const;
+
+export function getRegistrationTypeLabel(registrationType?: string) {
+  if (!registrationType) {
+    return 'Chưa xác định';
+  }
+
+  return (
+    registrationTypeLabels[registrationType as keyof typeof registrationTypeLabels] ??
+    registrationType
+  );
+}
+
 export function getStatusMeta(status?: string) {
   if (!status) {
     return { label: 'Chưa xác định', color: 'default' as const };
@@ -105,3 +134,4 @@ export function getAllowedUploadTypes(status?: string): DocumentType[] {
       return ['BCTT_REPORT'];
   }
 }
+

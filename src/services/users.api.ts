@@ -21,3 +21,7 @@ export function getStudents(params?: QueryParams) {
 export function getProfile() {
   return api.get('/users/me').then(unwrapResponse<AuthUser>).then(normalizeUser);
 }
+
+export function getMyFields() {
+  return api.get('/fields/me').then(unwrapResponse<string[]>);
+}

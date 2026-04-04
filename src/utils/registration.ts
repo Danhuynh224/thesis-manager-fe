@@ -73,3 +73,17 @@ export function calculateAverageScore(scores?: ScoreRecord[] | null) {
     (totals.reduce((sum, value) => sum + value, 0) / totals.length).toFixed(2),
   );
 }
+
+export function getRegistrationTypeLabel(registration?: Registration | null) {
+  const type = getRegistrationType(registration);
+
+  if (type === 'BCTT') {
+    return 'Báo cáo thực tập tốt nghiệp';
+  }
+
+  if (type === 'KLTN') {
+    return 'Khóa luận tốt nghiệp';
+  }
+
+  return type;
+}

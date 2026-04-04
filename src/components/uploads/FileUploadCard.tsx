@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { uploadDocument } from '../../services/documents.api';
 import type { DocumentRecord } from '../../types/models';
 import { getErrorMessage } from '../../utils/errors';
-import { documentTypeLabels } from '../../utils/status';
+import { getDocumentTypeLabel } from '../../utils/status';
 
 interface FileUploadCardProps {
   registrationId: number | string;
@@ -51,8 +51,7 @@ export function FileUploadCard({
     <Card className="glass-panel" size="small">
       <Space direction="vertical" style={{ width: '100%' }}>
         <Typography.Text strong>
-          {documentTypeLabels[documentType as keyof typeof documentTypeLabels] ??
-            documentType}
+          {getDocumentTypeLabel(documentType)}
         </Typography.Text>
         <Upload
           beforeUpload={() => false}
@@ -87,3 +86,4 @@ export function FileUploadCard({
     </Card>
   );
 }
+

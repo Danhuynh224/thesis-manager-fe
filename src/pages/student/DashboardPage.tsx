@@ -10,7 +10,7 @@ import { getMyNotifications } from '../../services/notifications.api';
 import { getRegistrationStatusHistory } from '../../services/registrations.api';
 import { useAuthStore } from '../../store/auth.store';
 import { queryKeys } from '../../utils/query-keys';
-import { getRegistrationTitle, getTermName } from '../../utils/registration';
+import { getRegistrationTitle, getRegistrationTypeLabel, getTermName } from '../../utils/registration';
 import { buildTimelineFromRegistration } from '../../utils/status';
 
 export default function StudentDashboardPage() {
@@ -90,7 +90,7 @@ export default function StudentDashboardPage() {
               GVHD: {currentRegistration?.supervisor?.fullName ?? 'Chưa phân công'}
             </Typography.Text>
             <Typography.Text>
-              Loại hồ sơ: {currentRegistration?.type ?? currentRegistration?.loai ?? '--'}
+              Loại hồ sơ: {getRegistrationTypeLabel(currentRegistration)}
             </Typography.Text>
             <StatusTag status={currentRegistration?.statusLabel} />
           </Space>

@@ -11,6 +11,7 @@ import type {
   StudentDashboard,
   Term,
 } from "../types/models";
+import { getDocumentTypeLabel } from "./status";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -228,10 +229,12 @@ export function normalizeRegistrationStatusHistoryItem(
 
 export function normalizeDocument(input: unknown): DocumentRecord {
   const raw = asRecord(input);
+  const type = asString(raw.type) ?? asString(raw.documentType) ?? "BCTT_REPORT";
 
   return {
     id: asString(raw.id) ?? "",
-    type: asString(raw.type) ?? asString(raw.documentType) ?? "BCTT_REPORT",
+    type,
+    typeLabel: getDocumentTypeLabel(type),
     name: asString(raw.name),
     fileName: asString(raw.fileName),
     fileUrl: asString(raw.fileUrl),

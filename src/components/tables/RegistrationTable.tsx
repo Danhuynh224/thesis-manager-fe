@@ -4,7 +4,7 @@ import type { ColumnsType } from "antd/es/table";
 import type { Registration } from "../../types/models";
 import {
   getRegistrationTitle,
-  getRegistrationType,
+  getRegistrationTypeLabel,
   getTermName,
 } from "../../utils/registration";
 import { StatusTag } from "../status/StatusTag";
@@ -40,7 +40,7 @@ export function RegistrationTable({
     },
     {
       title: "Loại",
-      render: (_, record) => getRegistrationType(record),
+      render: (_, record) => getRegistrationTypeLabel(record),
     },
     {
       title: "Đợt",
