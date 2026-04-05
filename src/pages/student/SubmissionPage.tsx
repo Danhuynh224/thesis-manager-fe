@@ -12,6 +12,7 @@ import {
   getRegistrationTitle,
 } from '../../utils/registration';
 import { getAllowedUploadTypes } from '../../utils/status';
+import type { DocumentType, Registration } from '../../types/models';
 
 export default function StudentSubmissionPage() {
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<
@@ -36,7 +37,21 @@ export default function StudentSubmissionPage() {
     enabled: Boolean(currentRegistrationId),
   });
 
-  const uploadTypes = getAllowedUploadTypes(activeRegistration?.status);
+  const resolveUploadTypes = (
+    registration?: Registration,
+  ): DocumentType[] => {
+    if (!registration) {
+      return [];
+    }
+
+    if (registration.loai === 'KLTN') {
+      return ['KLTN_REPORT'];
+    }
+
+    return getAllowedUploadTypes(registration.status);
+  };
+
+  const uploadTypes = resolveUploadTypes(activeRegistration);
 
   return (
     <div className="page-stack">

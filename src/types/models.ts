@@ -8,7 +8,7 @@ export type DocumentType =
   | "KLTN_REPORT"
   | "REVISED_THESIS"
   | "REVISION_EXPLANATION"
-  | "TURNITIN_REPORT"
+  | "TURNITIN"
   | "COMMITTEE_MINUTES";
 
 export interface TimelineEntry {
@@ -43,11 +43,17 @@ export interface Term {
 export interface Committee {
   id: number | string;
   name?: string;
+  dot?: string;
+  chairEmail?: string;
+  secretaryEmail?: string;
+  member1Email?: string;
+  member2Email?: string;
   chair?: AuthUser;
   secretary?: AuthUser;
   members?: AuthUser[];
   location?: string;
   defenseDate?: string;
+  createdAt?: string;
 }
 
 export interface Registration {
@@ -64,12 +70,17 @@ export interface Registration {
   supervisor?: AuthUser;
   reviewer?: AuthUser;
   committee?: Committee;
+  committeeId?: number | string;
   term?: Term;
   supervisorApproved?: boolean;
   chairApproved?: boolean;
   defenseDate?: string;
   defenseLocation?: string;
   finalScore?: number;
+  documents?: {
+    studentDocuments: DocumentRecord[];
+    lecturerDocuments: DocumentRecord[];
+  };
   statusHistory?: TimelineEntry[];
   createdAt?: string;
   updatedAt?: string;
@@ -89,6 +100,7 @@ export interface DocumentRecord {
 export interface ScoreRecord {
   id: number | string;
   role?: string;
+  lecturerName?: string;
   score1?: number;
   score2?: number;
   score3?: number;

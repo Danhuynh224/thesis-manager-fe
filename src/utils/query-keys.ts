@@ -15,6 +15,7 @@ export const queryKeys = {
   scores: (registrationId?: number | string) =>
     ['scores', registrationId] as const,
   committees: (params?: unknown) => ['committees', params] as const,
+  committee: (id?: number | string) => ['committee', id] as const,
   notifications: (params?: unknown) => ['notifications', params] as const,
   dashboard: (role: string) => ['dashboard', role] as const,
   minutes: (registrationId?: number | string) =>

@@ -13,6 +13,7 @@ import {
   getRegistrationStatusHistory,
 } from "../../services/registrations.api";
 import { getScoresByRegistration } from "../../services/scores.api";
+import type { ScoreRecord } from "../../types/models";
 import { queryKeys } from "../../utils/query-keys";
 import { getFileUrl, getRegistrationTitle } from "../../utils/registration";
 import { buildTimelineFromRegistration } from "../../utils/status";
@@ -55,6 +56,7 @@ export default function StudentStatusPage() {
   });
 
   const registration = detailQuery.data;
+  const scoreRows = scoresQuery.data ?? [];
   const timelineItems =
     (statusHistoryQuery.data?.length
       ? statusHistoryQuery.data.map((item) => ({
@@ -64,6 +66,21 @@ export default function StudentStatusPage() {
           createdAt: item.changedAt,
         }))
       : undefined) ?? buildTimelineFromRegistration(registration);
+
+  const getRoleLabel = (role?: string) => {
+    if (role === "SUPERVISOR") {
+      return "GVHD";
+    }
+
+    if (role === "REVIEWER") {
+      return "Phản biện";
+    }
+
+    return role ?? "--";
+  };
+
+  const getTotalScore = (score: ScoreRecord) =>
+    score.totalScore ?? score.finalScore ?? "--";
 
   return (
     <div className="page-stack">
@@ -93,7 +110,6 @@ export default function StudentStatusPage() {
           <Typography.Text strong>
             {getRegistrationTitle(registration)}
           </Typography.Text>
-          {/* {registration.statusLabel} */}
           <StatusTag status={registration?.statusLabel} />
         </Space>
       </SectionCard>
@@ -124,7 +140,7 @@ export default function StudentStatusPage() {
         </SectionCard>
       </div>
 
-      <CommitteeCard committee={registration?.committee} />
+      <CommitteeCard committeeId={registration?.committeeId} />
 
       <div className="page-grid two-up">
         <SectionCard title="Tài liệu đã nộp">
@@ -150,10 +166,21 @@ export default function StudentStatusPage() {
           <Table
             rowKey="id"
             pagination={false}
-            dataSource={scoresQuery.data ?? []}
+            dataSource={scoreRows}
             columns={[
-              { title: "Vai trò", dataIndex: "role" },
-              { title: "Điểm tổng", dataIndex: "totalScore" },
+              {
+                title: "Vai trò",
+                render: (_, record) => getRoleLabel(record.role),
+              },
+              {
+                title: "Tên giảng viên",
+                dataIndex: "lecturerName",
+                render: (value) => value ?? "--",
+              },
+              {
+                title: "Điểm tổng",
+                render: (_, record) => getTotalScore(record),
+              },
               { title: "Nhận xét", dataIndex: "comments" },
             ]}
           />

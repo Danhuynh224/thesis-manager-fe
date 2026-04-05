@@ -27,6 +27,19 @@ function asNumber(value: unknown) {
   return typeof value === "number" ? value : undefined;
 }
 
+function asNumericValue(value: unknown) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+
+  return undefined;
+}
+
 function asBoolean(value: unknown) {
   return typeof value === "boolean" ? value : undefined;
 }
@@ -94,6 +107,11 @@ export function normalizeCommittee(input: unknown): Committee {
   return {
     id: asString(raw.id) ?? "",
     name: asString(raw.name) ?? asString(raw.committeeName),
+    dot: asString(raw.dot),
+    chairEmail: asString(raw.chairEmail),
+    secretaryEmail: asString(raw.secretaryEmail),
+    member1Email: asString(raw.member1Email),
+    member2Email: asString(raw.member2Email),
     chair: raw.chair
       ? normalizeUser(raw.chair)
       : raw.chairEmail
@@ -128,12 +146,14 @@ export function normalizeCommittee(input: unknown): Committee {
       ),
     location: asString(raw.location),
     defenseDate: asString(raw.defenseDate),
+    createdAt: asString(raw.createdAt),
   };
 }
 
 export function normalizeRegistration(input: unknown): Registration {
   const raw = asRecord(input);
   const approvalStates = asRecord(raw.approvalStates);
+  const documents = asRecord(raw.documents);
 
   return {
     id: asString(raw.id) ?? "",
@@ -176,6 +196,7 @@ export function normalizeRegistration(input: unknown): Registration {
           })
         : undefined,
     committee: raw.committee ? normalizeCommittee(raw.committee) : undefined,
+    committeeId: asString(raw.committeeId),
     term: raw.term
       ? normalizeTerm(raw.term)
       : raw.dot || raw.tenDot
@@ -194,6 +215,14 @@ export function normalizeRegistration(input: unknown): Registration {
     defenseDate: asString(raw.defenseDate),
     defenseLocation: asString(raw.defenseLocation) ?? asString(raw.location),
     finalScore: asNumber(raw.finalScore),
+    documents: {
+      studentDocuments: Array.isArray(documents.studentDocuments)
+        ? documents.studentDocuments.map(normalizeDocument)
+        : [],
+      lecturerDocuments: Array.isArray(documents.lecturerDocuments)
+        ? documents.lecturerDocuments.map(normalizeDocument)
+        : [],
+    },
     statusHistory: Array.isArray(raw.statusHistory)
       ? raw.statusHistory.map((item) => {
           const entry = asRecord(item);
@@ -267,11 +296,16 @@ export function normalizeScore(input: unknown): ScoreRecord {
       asString(raw.id) ??
       `${asString(raw.vaiTroCham) ?? asString(raw.role) ?? "score"}-${asString(raw.emailCham) ?? "row"}`,
     role: asString(raw.role) ?? asString(raw.vaiTroCham),
-    score1: asNumber(raw.score1),
-    score2: asNumber(raw.score2),
-    score3: asNumber(raw.score3),
-    totalScore: asNumber(raw.totalScore),
-    finalScore: asNumber(raw.finalScore) ?? asNumber(raw.average),
+    lecturerName:
+      asString(raw.lecturerName) ??
+      asString(raw.tenGV) ??
+      asString(raw.teacherName) ??
+      asString(raw.emailGV),
+    score1: asNumericValue(raw.score1),
+    score2: asNumericValue(raw.score2),
+    score3: asNumericValue(raw.score3),
+    totalScore: asNumericValue(raw.totalScore),
+    finalScore: asNumericValue(raw.finalScore) ?? asNumericValue(raw.average),
     comments: asString(raw.comments),
     questions: asString(raw.questions),
     createdAt: asString(raw.createdAt),

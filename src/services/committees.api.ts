@@ -11,6 +11,13 @@ export function getCommittees(params?: QueryParams) {
     .then((items) => items.map(normalizeCommittee));
 }
 
+export function getCommitteeById(id: number | string) {
+  return api
+    .get(`/committees/${id}`)
+    .then(unwrapResponse<Committee>)
+    .then(normalizeCommittee);
+}
+
 export function createCommittee(payload: Record<string, unknown>) {
   return api
     .post('/committees', {

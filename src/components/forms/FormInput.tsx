@@ -6,7 +6,7 @@ interface FormInputProps<TFieldValues extends FieldValues> {
   name: Path<TFieldValues>;
   label: string;
   placeholder?: string;
-  type?: 'text' | 'password';
+  type?: 'text' | 'password' | 'datetime-local';
 }
 
 export function FormInput<TFieldValues extends FieldValues>({
@@ -29,7 +29,7 @@ export function FormInput<TFieldValues extends FieldValues>({
           {type === 'password' ? (
             <Input.Password {...field} placeholder={placeholder} />
           ) : (
-            <Input {...field} placeholder={placeholder} />
+            <Input {...field} type={type} placeholder={placeholder} />
           )}
         </Form.Item>
       )}

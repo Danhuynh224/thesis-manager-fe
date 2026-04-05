@@ -1,36 +1,60 @@
-import { Descriptions } from 'antd';
-import type { Committee } from '../../types/models';
-import { getCommitteeMembers } from '../../utils/registration';
-import { SectionCard } from './SectionCard';
+import { useQuery } from "@tanstack/react-query";
+import { Descriptions } from "antd";
+import { getCommitteeById } from "../../services/committees.api";
+import { queryKeys } from "../../utils/query-keys";
+import { getCommitteeMembers } from "../../utils/registration";
+import { SectionCard } from "./SectionCard";
 
 interface CommitteeCardProps {
-  committee?: Committee | null;
+  committeeId?: number | string | null;
 }
 
-export function CommitteeCard({ committee }: CommitteeCardProps) {
+export function CommitteeCard({ committeeId }: CommitteeCardProps) {
+  const resolvedCommitteeId = committeeId ?? undefined;
+
+  const committeeQuery = useQuery({
+    queryKey: queryKeys.committee(resolvedCommitteeId),
+    queryFn: () => getCommitteeById(resolvedCommitteeId!),
+    enabled: Boolean(resolvedCommitteeId),
+  });
+
+  const currentCommittee = committeeQuery.data;
+  const memberNames = getCommitteeMembers(currentCommittee)
+    .map((member) => member?.fullName ?? "")
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <SectionCard title="Thông tin hội đồng">
       <Descriptions column={1} size="small">
         <Descriptions.Item label="Tên hội đồng">
-          {committee?.name ?? 'Chưa phân công'}
+          {currentCommittee?.name ?? "Chưa phân công"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Đợt">
+          {currentCommittee?.dot ?? "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Chủ tịch">
-          {committee?.chair?.fullName ?? 'Chưa cập nhật'}
+          {currentCommittee?.chair?.fullName ??
+            currentCommittee?.chairEmail ??
+            "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Thư ký">
-          {committee?.secretary?.fullName ?? 'Chưa cập nhật'}
+          {currentCommittee?.secretary?.fullName ??
+            currentCommittee?.secretaryEmail ??
+            "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Thành viên">
-          {getCommitteeMembers(committee)
-            .map((member) => member?.fullName ?? '')
-            .filter(Boolean)
-            .join(', ') || 'Chưa cập nhật'}
+          {memberNames ||
+            [currentCommittee?.member1Email, currentCommittee?.member2Email]
+              .filter(Boolean)
+              .join(", ") ||
+            "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Địa điểm">
-          {committee?.location ?? 'Chưa cập nhật'}
+          {currentCommittee?.location ?? "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Ngày bảo vệ">
-          {committee?.defenseDate ?? 'Chưa cập nhật'}
+          {currentCommittee?.defenseDate ?? "Chưa cập nhật"}
         </Descriptions.Item>
       </Descriptions>
     </SectionCard>

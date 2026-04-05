@@ -1,19 +1,19 @@
-import type { QueryParams } from '../types/api';
+import type { QueryParams } from "../types/api";
 import type {
   Registration,
   RegistrationStatusHistoryItem,
-} from '../types/models';
-import { unwrapResponse } from '../utils/response';
+} from "../types/models";
+import { unwrapResponse } from "../utils/response";
 import {
   normalizeRegistration,
   normalizeRegistrationDetail,
   normalizeRegistrationStatusHistoryItem,
-} from '../utils/mappers';
-import { api } from './api';
+} from "../utils/mappers";
+import { api } from "./api";
 
 export function createBctt(payload: Record<string, unknown>) {
   return api
-    .post('/registrations/bctt', {
+    .post("/registrations/bctt", {
       tenDeTai: payload.title,
       linhVuc: payload.fieldName,
       tenCongTy: payload.companyName,
@@ -26,7 +26,7 @@ export function createBctt(payload: Record<string, unknown>) {
 
 export function createKltn(payload: Record<string, unknown>) {
   return api
-    .post('/registrations/kltn', {
+    .post("/registrations/kltn", {
       tenDeTai: payload.title,
       linhVuc: payload.fieldName,
       tenCongTy: payload.companyName,
@@ -39,14 +39,14 @@ export function createKltn(payload: Record<string, unknown>) {
 
 export function getMyRegistrations() {
   return api
-    .get('/registrations/me')
+    .get("/registrations/me")
     .then(unwrapResponse<Registration[]>)
     .then((items) => items.map(normalizeRegistration));
 }
 
 export function getRegistrations(params?: QueryParams) {
   return api
-    .get('/registrations', { params })
+    .get("/registrations", { params })
     .then(unwrapResponse<Registration[]>)
     .then((items) => items.map(normalizeRegistration));
 }
@@ -69,17 +69,25 @@ export function approveRegistration(
   id: number | string,
   payload?: Record<string, unknown>,
 ) {
-  const body = payload?.tenDeTai || payload?.title
-    ? { tenDeTai: payload.tenDeTai ?? payload.title }
-    : payload;
-  return api.patch(`/registrations/${id}/approve`, body).then(unwrapResponse<Registration>).then(normalizeRegistration);
+  // Approve endpoint only accepts explicit DTO fields; never forward unknown keys.
+  const body =
+    payload?.tenDeTai || payload?.title
+      ? { tenDeTai: payload.tenDeTai ?? payload.title }
+      : {};
+  return api
+    .patch(`/registrations/${id}/approve`, body)
+    .then(unwrapResponse<Registration>)
+    .then(normalizeRegistration);
 }
 
 export function rejectRegistration(
   id: number | string,
   payload?: Record<string, unknown>,
 ) {
-  return api.patch(`/registrations/${id}/reject`, payload).then(unwrapResponse<Registration>).then(normalizeRegistration);
+  return api
+    .patch(`/registrations/${id}/reject`, payload)
+    .then(unwrapResponse<Registration>)
+    .then(normalizeRegistration);
 }
 
 export function changeSupervisor(
@@ -88,7 +96,8 @@ export function changeSupervisor(
 ) {
   return api
     .patch(`/registrations/${id}/change-supervisor`, {
-      emailGVHD: payload.emailGVHD ?? payload.supervisorEmail ?? payload.supervisorId,
+      emailGVHD:
+        payload.emailGVHD ?? payload.supervisorEmail ?? payload.supervisorId,
     })
     .then(unwrapResponse<Registration>)
     .then(normalizeRegistration);
@@ -100,7 +109,8 @@ export function changeReviewer(
 ) {
   return api
     .patch(`/registrations/${id}/change-reviewer`, {
-      emailGVPB: payload.emailGVPB ?? payload.reviewerEmail ?? payload.reviewerId,
+      emailGVPB:
+        payload.emailGVPB ?? payload.reviewerEmail ?? payload.reviewerId,
     })
     .then(unwrapResponse<Registration>)
     .then(normalizeRegistration);
