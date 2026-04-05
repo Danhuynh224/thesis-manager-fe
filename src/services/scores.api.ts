@@ -1,6 +1,6 @@
 import type { ScoreRecord } from '../types/models';
 import { unwrapResponse } from '../utils/response';
-import { flattenScores, normalizeScore } from '../utils/mappers';
+import { flattenScores, normalizeScore, normalizeScoresByRegistration } from '../utils/mappers';
 import { api } from './api';
 
 export function createScore(payload: Record<string, unknown>) {
@@ -28,6 +28,13 @@ export function getScoresByRegistration(registrationId: number | string) {
     .get(`/scores/registration/${registrationId}`)
     .then(unwrapResponse<Record<string, unknown>>)
     .then(flattenScores);
+}
+
+export function getScoresSummaryByRegistration(registrationId: number | string) {
+  return api
+    .get(`/scores/registration/${registrationId}`)
+    .then(unwrapResponse<Record<string, unknown>>)
+    .then(normalizeScoresByRegistration);
 }
 
 export function finalizeScore(

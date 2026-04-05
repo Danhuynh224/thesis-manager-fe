@@ -8,10 +8,11 @@ import type {
   Registration,
   RegistrationStatusHistoryItem,
   ScoreRecord,
+  ScoresByRegistration,
   StudentDashboard,
   Term,
 } from "../types/models";
-import { getDocumentTypeLabel } from "./status";
+import { getDocumentTypeLabel, getStatusMeta } from "./status";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -41,7 +42,23 @@ function asNumericValue(value: unknown) {
 }
 
 function asBoolean(value: unknown) {
-  return typeof value === "boolean" ? value : undefined;
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    if (normalizedValue === "true") {
+      return true;
+    }
+
+    if (normalizedValue === "false") {
+      return false;
+    }
+  }
+
+  return undefined;
 }
 
 export function normalizeUser(input: unknown): AuthUser {
@@ -154,9 +171,12 @@ export function normalizeRegistration(input: unknown): Registration {
   const raw = asRecord(input);
   const approvalStates = asRecord(raw.approvalStates);
   const documents = asRecord(raw.documents);
+  const status = asString(raw.status) ?? "DRAFT";
 
   return {
     id: asString(raw.id) ?? "",
+    emailGVHD: asString(raw.emailGVHD),
+    emailGVPB: asString(raw.emailGVPB),
     title: asString(raw.title) ?? asString(raw.tenDeTai),
     topicTitle:
       asString(raw.topicTitle) ?? asString(raw.tenDeTai) ?? asString(raw.title),
@@ -165,8 +185,8 @@ export function normalizeRegistration(input: unknown): Registration {
     type:
       (raw.type as Registration["type"]) ?? (raw.loai as Registration["loai"]),
     loai: raw.loai as Registration["loai"],
-    status: asString(raw.status) ?? "DRAFT",
-    statusLabel: asString(raw.statusLabel) ?? asString(raw.label),
+    status,
+    statusLabel: getStatusMeta(status).label,
     student: raw.student
       ? normalizeUser(raw.student)
       : raw.emailSV
@@ -243,12 +263,13 @@ export function normalizeRegistrationStatusHistoryItem(
   input: unknown,
 ): RegistrationStatusHistoryItem {
   const raw = asRecord(input);
+  const status = asString(raw.status) ?? "DRAFT";
 
   return {
     id: asString(raw.id) ?? "",
     registrationId: asString(raw.registrationId) ?? "",
-    status: asString(raw.status) ?? "DRAFT",
-    statusLabel: asString(raw.statusLabel) ?? asString(raw.label),
+    status,
+    statusLabel: getStatusMeta(status).label,
     changedBy: asString(raw.changedBy),
     changedByRole: asString(raw.changedByRole),
     note: asString(raw.note) ?? asString(raw.description),
@@ -296,6 +317,11 @@ export function normalizeScore(input: unknown): ScoreRecord {
       asString(raw.id) ??
       `${asString(raw.vaiTroCham) ?? asString(raw.role) ?? "score"}-${asString(raw.emailCham) ?? "row"}`,
     role: asString(raw.role) ?? asString(raw.vaiTroCham),
+    vaiTroChamLabel: asString(raw.vaiTroChamLabel) ?? asString(raw.roleLabel),
+    lecturerEmail:
+      asString(raw.lecturerEmail) ??
+      asString(raw.emailGV) ??
+      asString(raw.emailCham),
     lecturerName:
       asString(raw.lecturerName) ??
       asString(raw.tenGV) ??
@@ -338,6 +364,33 @@ export function flattenScores(input: unknown): ScoreRecord[] {
   return scores;
 }
 
+export function normalizeScoresByRegistration(
+  input: unknown,
+): ScoresByRegistration {
+  const raw = asRecord(input);
+
+  return {
+    supervisor: raw.supervisor
+      ? normalizeScore({
+          ...asRecord(raw.supervisor),
+          vaiTroCham: "SUPERVISOR",
+        })
+      : null,
+    reviewer: raw.reviewer
+      ? normalizeScore({
+          ...asRecord(raw.reviewer),
+          vaiTroCham: "REVIEWER",
+        })
+      : null,
+    committee: Array.isArray(raw.committee)
+      ? raw.committee.map(normalizeScore)
+      : [],
+    final: {
+      average: asNumericValue(asRecord(raw.final).average),
+    },
+  };
+}
+
 export function normalizeMinute(input: unknown): MinuteRecord {
   const raw = asRecord(input);
 
@@ -346,7 +399,9 @@ export function normalizeMinute(input: unknown): MinuteRecord {
     registrationId: asString(raw.registrationId),
     fileUrl: asString(raw.fileUrl),
     url: asString(raw.url),
+    content: asString(raw.content),
     notes: asString(raw.notes) ?? asString(raw.content),
+    createdAt: asString(raw.createdAt),
     updatedAt: asString(raw.updatedAt),
   };
 }

@@ -164,6 +164,22 @@ select {
 .field-hint {
   color: var(--app-muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.registration-table .ant-table-cell {
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.registration-table .ant-space-vertical {
+  width: 100%;
+}
+
+.registration-table a {
+  overflow-wrap: anywhere;
 }
 
 .file-list {

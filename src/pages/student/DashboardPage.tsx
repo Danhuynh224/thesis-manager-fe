@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { List, Space, Typography } from 'antd';
 import { MetricCard } from '../../components/common/MetricCard';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -9,6 +9,7 @@ import { getStudentDashboard } from '../../services/dashboards.api';
 import { getMyNotifications } from '../../services/notifications.api';
 import { getRegistrationStatusHistory } from '../../services/registrations.api';
 import { useAuthStore } from '../../store/auth.store';
+import { formatDateTimeVi } from '../../utils/datetime';
 import { queryKeys } from '../../utils/query-keys';
 import { getRegistrationTitle, getRegistrationTypeLabel, getTermName } from '../../utils/registration';
 import { buildTimelineFromRegistration } from '../../utils/status';
@@ -60,7 +61,8 @@ export default function StudentDashboardPage() {
         />
         <MetricCard
           title="Trạng thái hiện tại"
-          value={currentRegistration?.status ?? 'Chưa đăng ký'}
+          value={currentRegistration?.statusLabel ?? currentRegistration?.status ?? 'Chưa đăng ký'}
+          preserveValue
         />
         <MetricCard
           title="Đợt đang tham gia"
@@ -112,7 +114,7 @@ export default function StudentDashboardPage() {
                 'Hệ thống sẽ cập nhật khi backend trả về mốc gần nhất.'}
             </Typography.Text>
             <Typography.Text type="secondary">
-              {dashboardQuery.data?.nextDeadline?.dueAt ?? 'Chưa xác định'}
+              {formatDateTimeVi(dashboardQuery.data?.nextDeadline?.dueAt, 'Chưa xác định')}
             </Typography.Text>
           </Space>
         </SectionCard>
@@ -130,7 +132,7 @@ export default function StudentDashboardPage() {
                   <div>
                     <div>{item.content}</div>
                     <Typography.Text type="secondary">
-                      {item.createdAt ?? 'Vừa xong'}
+                      {formatDateTimeVi(item.createdAt, 'Vừa xong')}
                     </Typography.Text>
                   </div>
                 }

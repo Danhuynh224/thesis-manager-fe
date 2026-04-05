@@ -17,8 +17,10 @@ import { getRegistrations } from "../../services/registrations.api";
 import { getTerms } from "../../services/terms.api";
 import { getLecturers } from "../../services/users.api";
 import { getErrorMessage } from "../../utils/errors";
-import { getRegistrationTitle } from "../../utils/registration";
+import { canManagerAssignCommittee } from "../../utils/kltn-permissions";
 import { queryKeys } from "../../utils/query-keys";
+import { getRegistrationTitle } from "../../utils/registration";
+import type { Registration } from "../../types/models";
 
 const committeeSchema = z.object({
   name: z.string().min(1, "Vui lòng nhập tên hội đồng"),
@@ -113,6 +115,26 @@ export default function HeadAssignCommitteePage() {
     value: lecturer.email,
   }));
 
+  const committeeOptions = (committeesQuery.data ?? []).map((committee) => ({
+    label: committee.name ?? `Hội đồng ${committee.id}`,
+    value: committee.id,
+  }));
+
+  const getCommitteeLabel = (committeeId?: number | string) => {
+    if (!committeeId) {
+      return "Chưa gán";
+    }
+
+    return (
+      committeeOptions.find((committee) => String(committee.value) === String(committeeId))
+        ?.label ?? `Hội đồng ${committeeId}`
+    );
+  };
+
+  const canEditCommitteeAssignment = (registration: Registration) =>
+    Boolean(registration.committeeId ?? registration.committee?.id) ||
+    canManagerAssignCommittee(registration);
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -197,6 +219,7 @@ export default function HeadAssignCommitteePage() {
           rowKey="id"
           dataSource={registrationsQuery.data ?? []}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 980 }}
           columns={[
             {
               title: "Sinh viên",
@@ -208,28 +231,30 @@ export default function HeadAssignCommitteePage() {
             },
             {
               title: "Hội đồng hiện tại",
-              render: (_, record) => record.committee?.name ?? "Chưa gán",
+              render: (_, record) =>
+                getCommitteeLabel(record.committeeId ?? record.committee?.id),
             },
             {
               title: "Chọn hội đồng",
-              render: (_, record) => (
-                <Space>
-                  <Select
-                    style={{ minWidth: 220 }}
-                    placeholder="Chọn hội đồng"
-                    onChange={(committeeId) =>
-                      assignMutation.mutate({
-                        committeeId,
-                        registrationId: record.id,
-                      })
-                    }
-                    options={(committeesQuery.data ?? []).map((committee) => ({
-                      label: committee.name ?? `Hội đồng ${committee.id}`,
-                      value: committee.id,
-                    }))}
-                  />
-                </Space>
-              ),
+              render: (_, record) =>
+                canEditCommitteeAssignment(record) ? (
+                  <Space>
+                    <Select
+                      style={{ minWidth: 220 }}
+                      placeholder="Chọn hội đồng"
+                      value={record.committeeId ?? record.committee?.id}
+                      onChange={(committeeId) =>
+                        assignMutation.mutate({
+                          committeeId,
+                          registrationId: record.id,
+                        })
+                      }
+                      options={committeeOptions}
+                    />
+                  </Space>
+                ) : (
+                  "Không thể phân hội đồng"
+                ),
             },
           ]}
         />

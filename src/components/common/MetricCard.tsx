@@ -20,6 +20,15 @@ export function MetricCard({
         value={value ?? '--'}
         suffix={suffix}
         formatter={preserveValue ? () => String(value ?? '--') : undefined}
+        valueStyle={
+          preserveValue
+            ? {
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                lineHeight: 1.4,
+              }
+            : undefined
+        }
       />
     </Card>
   );

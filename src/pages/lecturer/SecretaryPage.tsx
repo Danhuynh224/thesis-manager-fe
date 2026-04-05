@@ -1,43 +1,45 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Button, Modal, Space, Table, Typography, message } from 'antd';
-import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { PageHeader } from '../../components/common/PageHeader';
-import { SectionCard } from '../../components/common/SectionCard';
-import { FormTextarea } from '../../components/forms/FormTextarea';
-import { RegistrationTable } from '../../components/tables/RegistrationTable';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Modal, Space, message } from "antd";
+import { useMemo, useState } from "react";
+import { DefenseSummarySection } from "../../components/defense/DefenseSummarySection";
+import { MinutePanel } from "../../components/defense/MinutePanel";
+import { PageHeader } from "../../components/common/PageHeader";
+import { SectionCard } from "../../components/common/SectionCard";
+import { RegistrationTable } from "../../components/tables/RegistrationTable";
+import { generateMinutes, getMinutesByRegistration } from "../../services/minutes.api";
 import {
-  generateMinutes,
-  getMinutesByRegistration,
-  updateMinutes,
-} from '../../services/minutes.api';
-import { getRegistrations } from '../../services/registrations.api';
-import { finalizeScore, getScoresByRegistration } from '../../services/scores.api';
-import type { Registration } from '../../types/models';
-import { getErrorMessage } from '../../utils/errors';
-import { queryKeys } from '../../utils/query-keys';
-
-const minutesSchema = z.object({
-  notes: z.string().min(1, 'Vui lòng nhập ghi chú biên bản'),
-});
-
-type MinutesFormValues = z.infer<typeof minutesSchema>;
+  getRegistrationDetail,
+  getRegistrations,
+  updateStatus,
+} from "../../services/registrations.api";
+import {
+  finalizeScore,
+  getScoresSummaryByRegistration,
+} from "../../services/scores.api";
+import type { Registration } from "../../types/models";
+import { getErrorMessage } from "../../utils/errors";
+import { queryKeys } from "../../utils/query-keys";
 
 export default function LecturerSecretaryPage() {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(
     null,
   );
+  const queryClient = useQueryClient();
 
   const registrationsQuery = useQuery({
-    queryKey: queryKeys.registrations({ roleView: 'secretary' }),
-    queryFn: () => getRegistrations({ roleView: 'secretary' }),
+    queryKey: queryKeys.registrations({ roleView: "secretary" }),
+    queryFn: () => getRegistrations({ roleView: "secretary" }),
+  });
+
+  const detailQuery = useQuery({
+    queryKey: queryKeys.registration(selectedRegistration?.id),
+    queryFn: () => getRegistrationDetail(selectedRegistration!.id),
+    enabled: Boolean(selectedRegistration?.id),
   });
 
   const scoresQuery = useQuery({
     queryKey: queryKeys.scores(selectedRegistration?.id),
-    queryFn: () => getScoresByRegistration(selectedRegistration!.id),
+    queryFn: () => getScoresSummaryByRegistration(selectedRegistration!.id),
     enabled: Boolean(selectedRegistration?.id),
   });
 
@@ -47,45 +49,83 @@ export default function LecturerSecretaryPage() {
     enabled: Boolean(selectedRegistration?.id),
   });
 
-  const { control, handleSubmit, reset, formState } = useForm<MinutesFormValues>({
-    resolver: zodResolver(minutesSchema),
-    mode: 'onChange',
-    defaultValues: { notes: '' },
-  });
+  const currentRegistration = detailQuery.data ?? selectedRegistration;
+  const currentStatus = currentRegistration?.status;
+  const isCommitteeScoringStage =
+    currentStatus === "WAITING_COMMITTEE_SCORE" ||
+    currentStatus === "DEFENSE_SCHEDULED";
+  const isDefendedStage = currentStatus === "DEFENDED";
 
-  const finalizeMutation = useMutation({
-    mutationFn: finalizeScore,
-    onSuccess: () => message.success('Đã chốt điểm cuối cùng.'),
-    onError: (error) => message.error(getErrorMessage(error)),
-  });
+  const refreshSelectedRegistrationData = async () => {
+    if (!selectedRegistration?.id) {
+      return;
+    }
+
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.registrations({ roleView: "secretary" }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.registration(selectedRegistration.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.scores(selectedRegistration.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.minutes(selectedRegistration.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.documents(selectedRegistration.id),
+      }),
+    ]);
+  };
 
   const generateMutation = useMutation({
-    mutationFn: generateMinutes,
-    onSuccess: () => message.success('Đã sinh biên bản hội đồng.'),
-    onError: (error) => message.error(getErrorMessage(error)),
-  });
-
-  const updateMinutesMutation = useMutation({
-    mutationFn: ({
-      registrationId,
-      values,
-    }: {
-      registrationId: number | string;
-      values: MinutesFormValues;
-    }) => updateMinutes(registrationId, values),
-    onSuccess: () => {
-      message.success('Đã cập nhật biên bản.');
-      setSelectedRegistration(null);
-      reset({ notes: '' });
+    mutationFn: async (registrationId: number | string) => {
+      await generateMinutes(registrationId);
+      return getMinutesByRegistration(registrationId);
+    },
+    onSuccess: async () => {
+      message.success("Đã sẵn sàng biên bản hội đồng.");
+      await refreshSelectedRegistrationData();
     },
     onError: (error) => message.error(getErrorMessage(error)),
   });
+
+  const finalizeMutation = useMutation({
+    mutationFn: (registrationId: number | string) => finalizeScore(registrationId),
+    onSuccess: async () => {
+      message.success("Đã tổng hợp kết quả bảo vệ.");
+      await refreshSelectedRegistrationData();
+    },
+    onError: (error) => message.error(getErrorMessage(error)),
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: number | string;
+      status: string;
+    }) => updateStatus(id, { status }),
+    onSuccess: async () => {
+      message.success("Đã cập nhật trạng thái sau bảo vệ.");
+      await refreshSelectedRegistrationData();
+    },
+    onError: (error) => message.error(getErrorMessage(error)),
+  });
+
+  const finalAverage = useMemo(
+    () => scoresQuery.data?.final?.average ?? currentRegistration?.finalScore,
+    [scoresQuery.data?.final?.average, currentRegistration?.finalScore],
+  );
 
   return (
     <div className="page-stack">
       <PageHeader
         title="Thư ký hội đồng"
-        subtitle="Tổng hợp điểm, chốt điểm cuối cùng và cập nhật biên bản hội đồng."
+        subtitle="Tổng hợp kết quả bảo vệ, mở biên bản hội đồng và cập nhật trạng thái sau bảo vệ."
       />
 
       <SectionCard title="Danh sách cần tổng hợp">
@@ -93,30 +133,18 @@ export default function LecturerSecretaryPage() {
           data={registrationsQuery.data ?? []}
           extraColumns={[
             {
-              title: 'Điểm final',
-              render: (_, record) => record.finalScore ?? '--',
+              title: "Điểm final",
+              render: (_, record) => record.finalScore ?? "--",
             },
           ]}
           actions={(registration) => (
             <Space wrap>
               <Button
-                size="small"
-                onClick={() => finalizeMutation.mutate(registration.id)}
-              >
-                Chốt điểm
-              </Button>
-              <Button
-                size="small"
-                onClick={() => generateMutation.mutate(registration.id)}
-              >
-                Sinh biên bản
-              </Button>
-              <Button
                 type="primary"
                 size="small"
                 onClick={() => setSelectedRegistration(registration)}
               >
-                Xem chi tiết
+                Xem tổng hợp
               </Button>
             </Space>
           )}
@@ -127,59 +155,84 @@ export default function LecturerSecretaryPage() {
         open={Boolean(selectedRegistration)}
         onCancel={() => setSelectedRegistration(null)}
         footer={null}
-        width={860}
-        title="Chi tiết tổng hợp"
+        width={980}
+        title="Thư ký tổng hợp kết quả bảo vệ"
       >
-        <div className="page-grid two-up">
-          <SectionCard title="Các điểm thành phần">
-            <Table
-              rowKey="id"
-              pagination={false}
-              dataSource={scoresQuery.data ?? []}
-              columns={[
-                { title: 'Vai trò', dataIndex: 'role' },
-                { title: 'Điểm tổng', dataIndex: 'totalScore' },
-                { title: 'Nhận xét', dataIndex: 'comments' },
-              ]}
-            />
-          </SectionCard>
-
-          <SectionCard title="Biên bản hiện tại">
-            {minutesQuery.data?.fileUrl || minutesQuery.data?.url ? (
-              <a
-                href={minutesQuery.data.fileUrl ?? minutesQuery.data.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Xem biên bản đã tạo
-              </a>
-            ) : (
-              <Typography.Text type="secondary">
-                Chưa có biên bản được sinh.
-              </Typography.Text>
-            )}
-          </SectionCard>
-        </div>
-
         {selectedRegistration ? (
-          <form
-            onSubmit={handleSubmit((values) =>
-              updateMinutesMutation.mutate({
-                registrationId: selectedRegistration.id,
-                values,
-              })
-            )}
-          >
-            <FormTextarea control={control} name="notes" label="Cập nhật ghi chú biên bản" />
-            <Button
-              htmlType="submit"
-              type="primary"
-              loading={updateMinutesMutation.isPending}
-              disabled={!formState.isValid}
-            >
-              Lưu biên bản
-            </Button>
-          </form>
+          <div className="page-stack">
+            <DefenseSummarySection
+              scores={scoresQuery.data}
+              loading={scoresQuery.isLoading}
+            />
+
+            <MinutePanel
+              minute={minutesQuery.data}
+              loading={minutesQuery.isLoading}
+              generating={generateMutation.isPending}
+              onOpenOrGenerate={() =>
+                generateMutation.mutate(selectedRegistration.id)
+              }
+            />
+
+            {isCommitteeScoringStage ? (
+              <SectionCard title="Tổng hợp kết quả bảo vệ">
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    loading={finalizeMutation.isPending}
+                    onClick={() => finalizeMutation.mutate(selectedRegistration.id)}
+                  >
+                    Tổng hợp kết quả bảo vệ
+                  </Button>
+                </Space>
+                <div className="field-hint" style={{ marginTop: 8 }}>
+                  Điểm final hiện tại: {finalAverage ?? "--"}
+                </div>
+              </SectionCard>
+            ) : null}
+
+            {isDefendedStage ? (
+              <SectionCard title="Kết luận sau bảo vệ">
+                <Space wrap>
+                  <Button
+                    loading={updateStatusMutation.isPending}
+                    onClick={() =>
+                      updateStatusMutation.mutate({
+                        id: selectedRegistration.id,
+                        status: "COMPLETED",
+                      })
+                    }
+                  >
+                    Hoàn thành
+                  </Button>
+                  <Button
+                    type="primary"
+                    loading={updateStatusMutation.isPending}
+                    onClick={() =>
+                      updateStatusMutation.mutate({
+                        id: selectedRegistration.id,
+                        status: "WAITING_REVISED_UPLOAD",
+                      })
+                    }
+                  >
+                    Cần chỉnh sửa
+                  </Button>
+                  <Button
+                    danger
+                    loading={updateStatusMutation.isPending}
+                    onClick={() =>
+                      updateStatusMutation.mutate({
+                        id: selectedRegistration.id,
+                        status: "REJECTED_AFTER_DEFENSE",
+                      })
+                    }
+                  >
+                    Rớt
+                  </Button>
+                </Space>
+              </SectionCard>
+            ) : null}
+          </div>
         ) : null}
       </Modal>
     </div>

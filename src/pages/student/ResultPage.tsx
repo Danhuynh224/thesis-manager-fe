@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { Descriptions, Empty, Select, Table, Typography } from 'antd';
 import { useState } from 'react';
 import { PageHeader } from '../../components/common/PageHeader';
 import { SectionCard } from '../../components/common/SectionCard';
+import { StatusTag } from '../../components/status/StatusTag';
 import { getDocumentsByRegistration } from '../../services/documents.api';
 import { getMinutesByRegistration } from '../../services/minutes.api';
 import {
@@ -10,11 +11,14 @@ import {
   getRegistrationDetail,
 } from '../../services/registrations.api';
 import { getScoresByRegistration } from '../../services/scores.api';
+import type { ScoreRecord } from '../../types/models';
+import { formatDateTimeVi } from '../../utils/datetime';
 import { queryKeys } from '../../utils/query-keys';
 import {
   calculateAverageScore,
   getFileUrl,
   getLatestRegistration,
+  getRegistrationType,
   getRegistrationTitle,
 } from '../../utils/registration';
 
@@ -58,6 +62,18 @@ export default function StudentResultPage() {
   });
 
   const registration = detailQuery.data;
+  const isBcttRegistration = getRegistrationType(registration) === 'BCTT';
+  const visibleDocuments = (documentsQuery.data ?? []).filter(
+    (document) => document.type !== 'TURNITIN',
+  );
+
+  const getScoreRoleLabel = (score: ScoreRecord) => {
+    if (score.vaiTroChamLabel) {
+      return score.vaiTroChamLabel;
+    }
+
+    return score.role ?? '--';
+  };
 
   return (
     <div className="page-stack">
@@ -85,8 +101,11 @@ export default function StudentResultPage() {
             <Descriptions.Item label="Đề tài">
               {getRegistrationTitle(registration)}
             </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <StatusTag status={registration.statusLabel} />
+            </Descriptions.Item>
             <Descriptions.Item label="Ngày bảo vệ">
-              {registration.defenseDate ?? 'Chưa xếp lịch'}
+              {formatDateTimeVi(registration.defenseDate, 'Chưa xếp lịch')}
             </Descriptions.Item>
             <Descriptions.Item label="Địa điểm">
               {registration.defenseLocation ?? registration.committee?.location ?? 'Chưa có'}
@@ -94,56 +113,65 @@ export default function StudentResultPage() {
             <Descriptions.Item label="Điểm trung bình">
               {calculateAverageScore(scoresQuery.data) ?? registration.finalScore ?? '--'}
             </Descriptions.Item>
-            <Descriptions.Item label="Duyệt chỉnh sửa GVHD">
-              {registration.supervisorApproved ? 'Đã duyệt' : 'Chưa duyệt'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Duyệt chỉnh sửa Chủ tịch">
-              {registration.chairApproved ? 'Đã duyệt' : 'Chưa duyệt'}
-            </Descriptions.Item>
+            {!isBcttRegistration ? (
+              <Descriptions.Item label="Duyệt chỉnh sửa GVHD">
+                {registration.supervisorApproved ? 'Đã duyệt' : 'Chưa duyệt'}
+              </Descriptions.Item>
+            ) : null}
+            {!isBcttRegistration ? (
+              <Descriptions.Item label="Duyệt chỉnh sửa Chủ tịch">
+                {registration.chairApproved ? 'Đã duyệt' : 'Chưa duyệt'}
+              </Descriptions.Item>
+            ) : null}
           </Descriptions>
         ) : (
           <Empty description="Chưa có dữ liệu kết quả." />
         )}
       </SectionCard>
 
-      <div className="page-grid two-up">
+      <div className={`page-grid ${isBcttRegistration ? '' : 'two-up'}`.trim()}>
         <SectionCard title="Điểm thành phần">
           <Table
             rowKey="id"
             pagination={false}
             dataSource={scoresQuery.data ?? []}
             columns={[
-              { title: 'Vai trò', dataIndex: 'role' },
+              {
+                title: 'Vai trò',
+                render: (_, record) => getScoreRoleLabel(record),
+              },
               { title: 'Điểm tổng', dataIndex: 'totalScore' },
               { title: 'Nhận xét', dataIndex: 'comments' },
             ]}
           />
         </SectionCard>
 
-        <SectionCard title="Biên bản hội đồng">
-          {minutesQuery.data?.fileUrl || minutesQuery.data?.url ? (
-            <a
-              href={minutesQuery.data.fileUrl ?? minutesQuery.data.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Xem biên bản hội đồng
-            </a>
-          ) : (
-            <Typography.Text type="secondary">
-              Chưa có biên bản được sinh từ thư ký.
-            </Typography.Text>
-          )}
-        </SectionCard>
+        {!isBcttRegistration ? (
+          <SectionCard title="Biên bản hội đồng">
+            {minutesQuery.data?.fileUrl || minutesQuery.data?.url ? (
+              <a
+                href={minutesQuery.data.fileUrl ?? minutesQuery.data.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Xem biên bản hội đồng
+              </a>
+            ) : (
+              <Typography.Text type="secondary">
+                Chưa có biên bản được sinh từ thư ký.
+              </Typography.Text>
+            )}
+          </SectionCard>
+        ) : null}
       </div>
 
       <SectionCard title="Tài liệu liên quan">
         <Table
           rowKey="id"
           pagination={false}
-          dataSource={documentsQuery.data ?? []}
+          dataSource={visibleDocuments}
           columns={[
-            { title: 'Loại', dataIndex: 'type' },
+            { title: 'Loại', dataIndex: 'typeLabel' },
             {
               title: 'Tệp',
               render: (_, record) => (

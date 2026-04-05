@@ -30,6 +30,7 @@ interface ScoreFormProps {
   initialValues?: Partial<ScoreFormValues>;
   submitLabel?: string;
   loading?: boolean;
+  showQuestions?: boolean;
   onSubmit: (values: ScoreFormValues) => void | Promise<void>;
 }
 
@@ -46,6 +47,7 @@ export function ScoreForm({
   initialValues,
   submitLabel = 'Lưu điểm',
   loading,
+  showQuestions = false,
   onSubmit,
 }: ScoreFormProps) {
   const { control, handleSubmit, reset, formState } = useForm<ScoreFormFields>({
@@ -90,7 +92,9 @@ export function ScoreForm({
       <FormInput control={control} name="score3" label="Tiêu chí 3" />
       <FormInput control={control} name="totalScore" label="Tổng điểm" />
       <FormTextarea control={control} name="comments" label="Nhận xét" />
-      <FormTextarea control={control} name="questions" label="Câu hỏi" />
+      {showQuestions ? (
+        <FormTextarea control={control} name="questions" label="Câu hỏi" />
+      ) : null}
       <Button
         type="primary"
         htmlType="submit"

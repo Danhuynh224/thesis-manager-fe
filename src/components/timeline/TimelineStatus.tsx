@@ -1,5 +1,6 @@
 import { Timeline, Typography } from 'antd';
 import type { TimelineEntry } from '../../types/models';
+import { formatDateTimeVi } from '../../utils/datetime';
 import { getStatusMeta } from '../../utils/status';
 
 interface TimelineStatusProps {
@@ -18,7 +19,9 @@ export function TimelineStatus({ items }: TimelineStatusProps) {
             </Typography.Text>
             <div>{item.description}</div>
             {item.createdAt ? (
-              <Typography.Text type="secondary">{item.createdAt}</Typography.Text>
+              <Typography.Text type="secondary">
+                {formatDateTimeVi(item.createdAt)}
+              </Typography.Text>
             ) : null}
           </div>
         ),

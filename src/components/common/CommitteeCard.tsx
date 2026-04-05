@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Descriptions } from "antd";
 import { getCommitteeById } from "../../services/committees.api";
+import { formatDateTimeVi } from "../../utils/datetime";
 import { queryKeys } from "../../utils/query-keys";
 import { getCommitteeMembers } from "../../utils/registration";
 import { SectionCard } from "./SectionCard";
@@ -54,7 +55,7 @@ export function CommitteeCard({ committeeId }: CommitteeCardProps) {
           {currentCommittee?.location ?? "Chưa cập nhật"}
         </Descriptions.Item>
         <Descriptions.Item label="Ngày bảo vệ">
-          {currentCommittee?.defenseDate ?? "Chưa cập nhật"}
+          {formatDateTimeVi(currentCommittee?.defenseDate, "Chưa cập nhật")}
         </Descriptions.Item>
       </Descriptions>
     </SectionCard>

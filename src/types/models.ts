@@ -9,6 +9,8 @@ export type DocumentType =
   | "REVISED_THESIS"
   | "REVISION_EXPLANATION"
   | "TURNITIN"
+  | "REVIEW_ATTACHMENT"
+  | "SUPERVISOR_ATTACHMENT"
   | "COMMITTEE_MINUTES";
 
 export interface TimelineEntry {
@@ -58,6 +60,8 @@ export interface Committee {
 
 export interface Registration {
   id: number | string;
+  emailGVHD?: string;
+  emailGVPB?: string;
   title?: string;
   topicTitle?: string;
   fieldName?: string;
@@ -100,6 +104,8 @@ export interface DocumentRecord {
 export interface ScoreRecord {
   id: number | string;
   role?: string;
+  vaiTroChamLabel?: string;
+  lecturerEmail?: string;
   lecturerName?: string;
   score1?: number;
   score2?: number;
@@ -110,6 +116,15 @@ export interface ScoreRecord {
   questions?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ScoresByRegistration {
+  supervisor?: ScoreRecord | null;
+  reviewer?: ScoreRecord | null;
+  committee: ScoreRecord[];
+  final?: {
+    average?: number;
+  };
 }
 
 export interface NotificationItem {
@@ -135,7 +150,9 @@ export interface MinuteRecord {
   registrationId?: number | string;
   fileUrl?: string;
   url?: string;
+  content?: string;
   notes?: string;
+  createdAt?: string;
   updatedAt?: string;
 }
 

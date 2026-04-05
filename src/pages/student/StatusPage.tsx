@@ -15,7 +15,11 @@ import {
 import { getScoresByRegistration } from "../../services/scores.api";
 import type { ScoreRecord } from "../../types/models";
 import { queryKeys } from "../../utils/query-keys";
-import { getFileUrl, getRegistrationTitle } from "../../utils/registration";
+import {
+  getFileUrl,
+  getRegistrationTitle,
+  getRegistrationType,
+} from "../../utils/registration";
 import { buildTimelineFromRegistration } from "../../utils/status";
 
 export default function StudentStatusPage() {
@@ -56,7 +60,11 @@ export default function StudentStatusPage() {
   });
 
   const registration = detailQuery.data;
+  const isBcttRegistration = getRegistrationType(registration) === "BCTT";
   const scoreRows = scoresQuery.data ?? [];
+  const visibleDocuments = (documentsQuery.data ?? []).filter(
+    (document) => document.type !== "TURNITIN",
+  );
   const timelineItems =
     (statusHistoryQuery.data?.length
       ? statusHistoryQuery.data.map((item) => ({
@@ -68,6 +76,10 @@ export default function StudentStatusPage() {
       : undefined) ?? buildTimelineFromRegistration(registration);
 
   const getRoleLabel = (role?: string) => {
+    if (typeof role !== "string") {
+      return "--";
+    }
+
     if (role === "SUPERVISOR") {
       return "GVHD";
     }
@@ -77,6 +89,14 @@ export default function StudentStatusPage() {
     }
 
     return role ?? "--";
+  };
+
+  const getScoreRoleLabel = (score: ScoreRecord) => {
+    if (score.vaiTroChamLabel) {
+      return score.vaiTroChamLabel;
+    }
+
+    return getRoleLabel(score.role);
   };
 
   const getTotalScore = (score: ScoreRecord) =>
@@ -127,27 +147,35 @@ export default function StudentStatusPage() {
             <Descriptions.Item label="GVHD">
               {registration?.supervisor?.fullName ?? "--"}
             </Descriptions.Item>
-            <Descriptions.Item label="GVPB">
-              {registration?.reviewer?.fullName ?? "--"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Supervisor approved">
-              {registration?.supervisorApproved ? "Đã duyệt" : "Chưa duyệt"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Chair approved">
-              {registration?.chairApproved ? "Đã duyệt" : "Chưa duyệt"}
-            </Descriptions.Item>
+            {!isBcttRegistration ? (
+              <Descriptions.Item label="GVPB">
+                {registration?.reviewer?.fullName ?? "--"}
+              </Descriptions.Item>
+            ) : null}
+            {!isBcttRegistration ? (
+              <Descriptions.Item label="Supervisor approved">
+                {registration?.supervisorApproved ? "Đã duyệt" : "Chưa duyệt"}
+              </Descriptions.Item>
+            ) : null}
+            {!isBcttRegistration ? (
+              <Descriptions.Item label="Chair approved">
+                {registration?.chairApproved ? "Đã duyệt" : "Chưa duyệt"}
+              </Descriptions.Item>
+            ) : null}
           </Descriptions>
         </SectionCard>
       </div>
 
-      <CommitteeCard committeeId={registration?.committeeId} />
+      {!isBcttRegistration ? (
+        <CommitteeCard committeeId={registration?.committeeId} />
+      ) : null}
 
       <div className="page-grid two-up">
         <SectionCard title="Tài liệu đã nộp">
           <Table
             rowKey="id"
             pagination={false}
-            dataSource={documentsQuery.data ?? []}
+            dataSource={visibleDocuments}
             columns={[
               { title: "Loại", dataIndex: "typeLabel" },
               {
@@ -170,7 +198,7 @@ export default function StudentStatusPage() {
             columns={[
               {
                 title: "Vai trò",
-                render: (_, record) => getRoleLabel(record.role),
+                render: (_, record) => getScoreRoleLabel(record),
               },
               {
                 title: "Tên giảng viên",

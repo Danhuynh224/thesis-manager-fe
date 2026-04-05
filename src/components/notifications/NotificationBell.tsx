@@ -1,11 +1,12 @@
-import { BellOutlined } from '@ant-design/icons';
+﻿import { BellOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Dropdown, List, Space, Typography, message } from 'antd';
 import { useEffect } from 'react';
 import { getMyNotifications, markNotificationRead } from '../../services/notifications.api';
 import { useNotificationStore } from '../../store/notification.store';
-import { queryKeys } from '../../utils/query-keys';
+import { formatDateTimeVi } from '../../utils/datetime';
 import { getErrorMessage } from '../../utils/errors';
+import { queryKeys } from '../../utils/query-keys';
 
 export function NotificationBell() {
   const queryClient = useQueryClient();
@@ -68,7 +69,7 @@ export function NotificationBell() {
                       <div>
                         <div>{item.content}</div>
                         <Typography.Text type="secondary">
-                          {item.createdAt ?? 'Vừa xong'}
+                          {formatDateTimeVi(item.createdAt, 'Vừa xong')}
                         </Typography.Text>
                       </div>
                     }
